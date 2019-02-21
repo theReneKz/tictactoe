@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+<style>
+	.centro {
+		margin-left:auto;
+		margin-right: auto;
+		margin-bottom:60px;
+	}
+	td {
+		width: 100px;
+		height: 100px;
+		font-size: 60px;
+		text-align: center;
+		border-style: solid;
+		border-width: 5px;
+	}
+
+	h1 {
+		text-align: center;
+		color:green;
+		margin-bottom: 40px;
+	}
+	h2 {
+		text-align: center;
+		margin-bottom: 20px;
+	}
+
+	span {
+		margin:auto auto auto 0;
+	}
+	.campo {
+		width: 100%;
+		height: 100%;
+	}
+	.superior {
+		border-top-style: none;
+	}
+	.inferior {
+		border-bottom-style: none;
+	}
+	.direita {
+		border-right-style: none;
+	}
+	.esquerda {
+		border-left-style: none;
+	}
+</style>
+<script>
+var raiz;
+var estadoAtual;
+var jogadaAtual = "O"
+var maquina = false;
+var maquinaInicia = false;
+var pontoJogador = 0;
+var pontoComputador = 0;
+var pontoEmpate = 0;
+
+$(document).ready(function(){
+  $("#ponto-jogador").html(pontoJogador);
+  $("#ponto-computador").html(pontoComputador);
+  $("#ponto-empate").html(pontoEmpate);
+  inicializaJogo();  
+     
+  $("#c11").click(function() {
+	atualizaEstado(this, 0);
+  });
+  $("#c12").click(function() {
+	atualizaEstado(this, 1);
+  });
+  $("#c13").click(function() {
+  	atualizaEstado(this, 2);
+  });
+  $("#c21").click(function() {
+  	atualizaEstado(this, 3);
+  });
+  $("#c22").click(function() {
+  	atualizaEstado(this, 4);
+  });
+  $("#c23").click(function() {
+  	atualizaEstado(this, 5);
+  });
+  $("#c31").click(function() {
+  	atualizaEstado(this, 6);
+  });
+  $("#c32").click(function() {
+  	atualizaEstado(this, 7);
+  });
+  $("#c33").click(function() {
+  	atualizaEstado(this, 8);
+  });
+  
+  
+  $("#reiniciar").click(function() {
+	maquinaInicia = !maquinaInicia;
+	maquina = maquinaInicia;
+	inicializaJogo(); 
+	$("#reiniciar").hide();
+  });
+});
+
+
+
+function atualizaEstado(display, posicao) {
+	if(!maquina && estadoAtual.estado.charAt(posicao) == '-') {
+		maquina = true;
+		display.innerHTML = jogadaAtual;
+		var estadoNovo = setCharAt(estadoAtual.estado, posicao, jogadaAtual);
+		for(var i = 0; i < estadoAtual.filhos.length; i++) {
+			if(estadoNovo == estadoAtual.filhos[i].estado) {
+				estadoAtual = estadoAtual.filhos[i];
+				jogadaAtual = trocaJogada(jogadaAtual);
+				if(avaliaVitoria(estadoAtual.estado) == -10) {
+					coloreVitoria(estadoAtual.estado);
+					maquina = true;
+					pontoJogador = pontoJogador + 1;
+					$("#ponto-jogador").html(pontoJogador);
+					$("#reiniciar").show();
+					$('#modalVitoria').modal('show');
+				} else {
+					if(estadoAtual.filhos.length == 0) {
+						pontoEmpate = pontoEmpate + 1;
+						$("#ponto-empate").html(pontoEmpate);
+						$("#reiniciar").show();
+						$('#modalEmpate').modal('show');
+						
+					} else {
+						jogoVezMaquina(); 
+					}
+				}
+			}
+		}
+	}
+}
+
+function inicializaJogo() {
+	$(".campo").css("color", "black");
+	$(".campo").empty();
+	if(maquina) {
+		jogadaAtual = "X";
+	} else {
+		jogadaAtual = "O";
+	}
+	criaArvore(jogadaAtual);
+	estadoAtual = raiz;
+	avaliaArvore(estadoAtual, maquina);
+	if(maquina) {
+		jogoVezMaquina(); 
+	}
+}
+
+function criaArvore(inicio) {
+	var estadoAtual = {estado:"---------", filhos:[], pontos:0};
+	criaNodo(inicio, estadoAtual)
+	raiz = estadoAtual;
+}
+
+function criaNodo(jogada, estadoAtual) {
+	var estado = estadoAtual.estado;
+	if(avaliaVitoria(estado) == 0) {
+		var proximaJogada = trocaJogada(jogada);
+		for(var i = 0; i < estado.length; i++) {
+			var novoEstado = estado;
+			if(estado.charAt(i) == '-') {
+				var novoEstado = {estado: setCharAt(estado, i, jogada), filhos:[], pontos:0};
+				estadoAtual.filhos[estadoAtual.filhos.length] = novoEstado;
+				criaNodo(proximaJogada, novoEstado);
+			}
+		}
+	}
+}
+
+function jogoVezMaquina() {
+	var estados = [];
+	var maiorPonto = -10;
+	for(var i = 0; i < estadoAtual.filhos.length; i++) {
+		if(estadoAtual.filhos[i].pontos > maiorPonto) {
+			maiorPonto = estadoAtual.filhos[i].pontos;
+		}
+	}
+	for(var i = 0; i < estadoAtual.filhos.length; i++) {
+		if(estadoAtual.filhos[i].pontos == maiorPonto) {
+			estados[estados.length] = estadoAtual.filhos[i];
+		}
+	}
+	var game = 0;
+	if(estados.length > 1) {
+		game = (Math.floor(Math.random()*estados.length));
+		if(game < estados.length) {
+			escolha = estados[game];
+		}
+	}
+	escolha = estados[game];
+
+	for(var i = 0; i < escolha.estado.length; i++) {
+		var pos1 = estadoAtual.estado.charAt(i);
+		var pos2 = escolha.estado.charAt(i);
+		if(pos1 != pos2) {
+			switch (i) {
+				case 0: 
+				$("#c11").html(jogadaAtual);
+				break;
+				case 1: 
+				$("#c12").html(jogadaAtual);
+				break;
+				case 2: 
+				$("#c13").html(jogadaAtual);
+				break;
+				case 3: 
+				$("#c21").html(jogadaAtual);
+				break;
+				case 4: 
+				$("#c22").html(jogadaAtual);
+				break;
+				case 5: 
+				$("#c23").html(jogadaAtual);
+				break;
+				case 6: 
+				$("#c31").html(jogadaAtual);
+				break;
+				case 7: 
+				$("#c32").html(jogadaAtual);
+				break;
+				case 8: 
+				$("#c33").html(jogadaAtual);
+				break;
+			}
+			i = escolha.estado.length;
+		}
+	}
+	jogadaAtual = trocaJogada(jogadaAtual);
+	maquina = false;
+	estadoAtual = escolha;
+	if(avaliaVitoria(estadoAtual.estado) == 10) {
+		coloreVitoria(estadoAtual.estado)
+		maquina = true;
+		pontoComputador = pontoComputador + 1;
+		$("#ponto-computador").html(pontoComputador);
+		$("#reiniciar").show();
+		$('#modalDerrota').modal('show');
+	} else {
+		if(estadoAtual.filhos.length == 0) {
+			maquina = true;
+			pontoEmpate = pontoEmpate + 1;
+			$("#ponto-empate").html(pontoEmpate);
+			$("#reiniciar").show();
+			$('#modalEmpate').modal('show');
+		}
+	}
+}
+
+function trocaJogada(jogada) {
+	var proximaJogada;
+	if(jogada == "X") {
+		proximaJogada = "O";
+	} else {
+		proximaJogada = "X";
+	}
+	return proximaJogada;
+}
+
+function avaliaArvore(estadoAtual, jogo) {
+	
+	if(estadoAtual.filhos.length == 0) {
+		estadoAtual.pontos = avaliaVitoria(estadoAtual.estado);
+	} else {
+		for(var i = 0; i < estadoAtual.filhos.length; i++) {
+			avaliaArvore(estadoAtual.filhos[i], !jogo);
+		}
+		var pontoAtual = 0;
+
+		if(jogo) {
+			pontoAtual = -20;
+		} else {
+			pontoAtual = 20;
+		}
+
+		for(var i = 0; i < estadoAtual.filhos.length; i++) {
+			if(jogo) {
+				if(estadoAtual.filhos[i].pontos > pontoAtual) {
+					pontoAtual = estadoAtual.filhos[i].pontos;
+				}
+			} else {
+				if(estadoAtual.filhos[i].pontos < pontoAtual) {
+					pontoAtual = estadoAtual.filhos[i].pontos;
+				}
+			}
+		}
+		estadoAtual.pontos = pontoAtual;
+	}
+}
+
+function avaliaVitoria(estado) {
+	var ganhador;
+	if (estado.charAt(0) == estado.charAt(1) && estado.charAt(1) == estado.charAt(2) && estado.charAt(0) != "-") {
+		ganhador = estado.charAt(0);
+	} else if(estado.charAt(3) == estado.charAt(4) && estado.charAt(4) == estado.charAt(5) && estado.charAt(3) != "-") {
+		ganhador = estado.charAt(3);
+	} else if(estado.charAt(6) == estado.charAt(7) && estado.charAt(7) == estado.charAt(8) && estado.charAt(6) != "-") {
+		ganhador = estado.charAt(6);
+	} else if(estado.charAt(0) == estado.charAt(3) && estado.charAt(3) == estado.charAt(6) && estado.charAt(0) != "-") {
+		ganhador = estado.charAt(0);
+	} else if(estado.charAt(1) == estado.charAt(4) && estado.charAt(4) == estado.charAt(7) && estado.charAt(1) != "-") {
+		ganhador = estado.charAt(1);
+	} else if(estado.charAt(2) == estado.charAt(5) && estado.charAt(5) == estado.charAt(8) && estado.charAt(2) != "-") {
+		ganhador = estado.charAt(2);
+	} else if(estado.charAt(0) == estado.charAt(4) && estado.charAt(4) == estado.charAt(8) && estado.charAt(0) != "-") {
+		ganhador = estado.charAt(0);
+	} else if(estado.charAt(2) == estado.charAt(4) && estado.charAt(4) == estado.charAt(6) && estado.charAt(2) != "-") {
+		ganhador = estado.charAt(2);
+	}
+	if(ganhador == "X") {
+		return 10;
+	} else if(ganhador == "O") {
+		return -10;
+	} else {
+		return 0;
+	}
+}
+
+function coloreVitoria(estado) {
+	if (estado.charAt(0) == estado.charAt(1) && estado.charAt(1) == estado.charAt(2) && estado.charAt(0) != "-") {
+		$("#c11").css("color", "red");
+		$("#c12").css("color", "red");
+		$("#c13").css("color", "red");
+	} else if(estado.charAt(3) == estado.charAt(4) && estado.charAt(4) == estado.charAt(5) && estado.charAt(3) != "-") {
+		$("#c21").css("color", "red");
+		$("#c22").css("color", "red");
+		$("#c23").css("color", "red");
+	} else if(estado.charAt(6) == estado.charAt(7) && estado.charAt(7) == estado.charAt(8) && estado.charAt(6) != "-") {
+		$("#c31").css("color", "red");
+		$("#c32").css("color", "red");
+		$("#c33").css("color", "red");
+	} else if(estado.charAt(0) == estado.charAt(3) && estado.charAt(3) == estado.charAt(6) && estado.charAt(0) != "-") {
+		$("#c11").css("color", "red");
+		$("#c21").css("color", "red");
+		$("#c31").css("color", "red");
+	} else if(estado.charAt(1) == estado.charAt(4) && estado.charAt(4) == estado.charAt(7) && estado.charAt(1) != "-") {
+		$("#c12").css("color", "red");
+		$("#c22").css("color", "red");
+		$("#c32").css("color", "red");
+	} else if(estado.charAt(2) == estado.charAt(5) && estado.charAt(5) == estado.charAt(8) && estado.charAt(2) != "-") {
+		$("#c13").css("color", "red");
+		$("#c23").css("color", "red");
+		$("#c33").css("color", "red");
+	} else if(estado.charAt(0) == estado.charAt(4) && estado.charAt(4) == estado.charAt(8) && estado.charAt(0) != "-") {
+		$("#c11").css("color", "red");
+		$("#c22").css("color", "red");
+		$("#c33").css("color", "red");
+	} else if(estado.charAt(2) == estado.charAt(4) && estado.charAt(4) == estado.charAt(6) && estado.charAt(2) != "-") {
+		$("#c13").css("color", "red");
+		$("#c22").css("color", "red");
+		$("#c31").css("color", "red");
+	}
+}
+
+function setCharAt(str,index,chr) {
+    if(index > str.length-1) return str;
+    return str.substr(0,index) + chr + str.substr(index+1);
+}
+</script>
+</head>
+<body>
+<div class="container-fluid">
+  <div class="row">
+	<div class="col-sm-12">
+		<h1>Jogo da Velha</h1>
+	</div>
+  </div>
+
+  <div class="row">
+  <div class="col-sm-12 col-lg-5">
+	<div class="row">
+		<div class="col-sm-12">
+			<div class="container centro" style="width:40%">
+				<div class="row">
+					<div class="col-sm-12">
+						<h2>Pontuação:</h2>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-sm-6">Você: </div>
+					<div class="col-sm-6 "><span id="ponto-jogador" style="float:right;"></span></div>
+				</div>
+				<div class="row">
+					<div class="col-sm-6">Computador:</div>
+					<div class="col-sm-6 "><span id="ponto-computador"  style="float:right;"></span></div>
+				</div>
+				<div class="row">
+					<div class="col-sm-6">Empate: </div>
+					<div class="col-sm-6 "><span id="ponto-empate"  style="float:right;"></span></div>
+				</div>
+			</div>
+		</div>
+		
+	</div>
+  </div>
+  <div class="col-sm-12 col-lg-7">
+    <table class="centro">
+	  <tr><td class="superior esquerda"><div class="campo" id="c11"></div></td><td class="superior"><div class="campo" id="c12"></div></td><td class="superior direita"><div class="campo" id="c13"></div></td></tr>
+	  <tr><td class="esquerda"><div class="campo" id="c21"></div></td><td><div class="campo" id="c22"></div></td><td class="direita"><div class="campo" id="c23"></div></td></tr>
+	  <tr><td class="inferior esquerda"><div class="campo" id="c31"></div></td><td class="inferior"><div class="campo" id="c32"></div></td><td class="inferior direita"><div class="campo" id="c33"></div></td></tr>
+    </table>
+	</div>
+
+</div>
+<div class="row">
+	<div class="col-sm-12">
+	<button type="button" id="reiniciar" class="btn btn-primary btn-lg btn-block" style="display:none;">Reiniciar jogo</button>
+	</div>
+</div>
+
+<div class="modal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="text-modal"></h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>Tente novamente.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalDerrota" tabindex="-1" role="dialog" aria-labelledby="modalDerrota" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+         <h5 class="modal-title">Você Perdeu!</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">Quer CPF na nota, freguês</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="modalEmpate" tabindex="-1" role="dialog" aria-labelledby="modalEmpate" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+         <h5 class="modal-title">Jogo Empatado!</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">Tira este sorriso da cara. Um empate não é uma vitória.</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="modalVitoria" tabindex="-1" role="dialog" aria-labelledby="modalVitoria" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+         <h5 class="modal-title">Você ganhou!</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">Sorte de principiante... Se depender de mim, não vai se repetir.</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
