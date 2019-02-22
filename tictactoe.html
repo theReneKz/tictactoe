@@ -51,7 +51,8 @@
 	}
 </style>
 <script>
-var raiz;
+var raizJogador;
+var raizMaquina;
 var estadoAtual;
 var jogadaAtual = "O"
 var maquina = false;
@@ -61,10 +62,14 @@ var pontoComputador = 0;
 var pontoEmpate = 0;
 
 $(document).ready(function(){
+  raizJogador = criaArvore("O");
+  raizMaquina = criaArvore("X");
+  
+  inicializaJogo();  
+  
   $("#ponto-jogador").html(pontoJogador);
   $("#ponto-computador").html(pontoComputador);
   $("#ponto-empate").html(pontoEmpate);
-  inicializaJogo();  
      
   $("#c11").click(function() {
 	atualizaEstado(this, 0);
@@ -142,21 +147,20 @@ function inicializaJogo() {
 	$(".campo").empty();
 	if(maquina) {
 		jogadaAtual = "X";
+		estadoAtual = raizMaquina;
+		jogoVezMaquina();
 	} else {
 		jogadaAtual = "O";
-	}
-	criaArvore(jogadaAtual);
-	estadoAtual = raiz;
-	avaliaArvore(estadoAtual, maquina);
-	if(maquina) {
-		jogoVezMaquina(); 
+		estadoAtual = raizJogador;
 	}
 }
 
-function criaArvore(inicio) {
+function criaArvore(jogadaInicial) {
 	var estadoAtual = {estado:"---------", filhos:[], pontos:0};
-	criaNodo(inicio, estadoAtual)
-	raiz = estadoAtual;
+	criaNodo(jogadaInicial, estadoAtual);
+	minimax(estadoAtual, (jogadaInicial == "X"));
+
+	return estadoAtual;
 }
 
 function criaNodo(jogada, estadoAtual) {
@@ -263,15 +267,16 @@ function trocaJogada(jogada) {
 	return proximaJogada;
 }
 
-function avaliaArvore(estadoAtual, jogo) {
+function minimax(estadoAtual, jogo) {
 	
 	if(estadoAtual.filhos.length == 0) {
 		estadoAtual.pontos = avaliaVitoria(estadoAtual.estado);
 	} else {
 		for(var i = 0; i < estadoAtual.filhos.length; i++) {
-			avaliaArvore(estadoAtual.filhos[i], !jogo);
+			minimax(estadoAtual.filhos[i], !jogo);
 		}
 		var pontoAtual = 0;
+
 		for(var i = 0; i < estadoAtual.filhos.length; i++) {
 			if(jogo) {
 				if(estadoAtual.filhos[i].pontos > pontoAtual) {
