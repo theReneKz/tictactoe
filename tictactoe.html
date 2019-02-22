@@ -108,7 +108,18 @@ $(document).ready(function(){
   });
 });
 
-
+function inicializaJogo() {
+	$(".campo").css("color", "black");
+	$(".campo").empty();
+	if(maquina) {
+		jogadaAtual = "X";
+		estadoAtual = raizMaquina;
+		jogoVezMaquina();
+	} else {
+		jogadaAtual = "O";
+		estadoAtual = raizJogador;
+	}
+}
 
 function atualizaEstado(display, posicao) {
 	if(!maquina && estadoAtual.estado.charAt(posicao) == '-') {
@@ -142,42 +153,6 @@ function atualizaEstado(display, posicao) {
 	}
 }
 
-function inicializaJogo() {
-	$(".campo").css("color", "black");
-	$(".campo").empty();
-	if(maquina) {
-		jogadaAtual = "X";
-		estadoAtual = raizMaquina;
-		jogoVezMaquina();
-	} else {
-		jogadaAtual = "O";
-		estadoAtual = raizJogador;
-	}
-}
-
-function criaArvore(jogadaInicial) {
-	var estadoAtual = {estado:"---------", filhos:[], pontos:0};
-	criaNodo(jogadaInicial, estadoAtual);
-	minimax(estadoAtual, (jogadaInicial == "X"));
-
-	return estadoAtual;
-}
-
-function criaNodo(jogada, estadoAtual) {
-	var estado = estadoAtual.estado;
-	if(avaliaVitoria(estado) == 0) {
-		var proximaJogada = trocaJogada(jogada);
-		for(var i = 0; i < estado.length; i++) {
-			var novoEstado = estado;
-			if(estado.charAt(i) == '-') {
-				var novoEstado = {estado: setCharAt(estado, i, jogada), filhos:[], pontos:0};
-				estadoAtual.filhos[estadoAtual.filhos.length] = novoEstado;
-				criaNodo(proximaJogada, novoEstado);
-			}
-		}
-	}
-}
-
 function jogoVezMaquina() {
 	var estados = [];
 	var maiorPonto = -10;
@@ -194,9 +169,6 @@ function jogoVezMaquina() {
 	var game = 0;
 	if(estados.length > 1) {
 		game = (Math.floor(Math.random()*estados.length));
-		if(game < estados.length) {
-			escolha = estados[game];
-		}
 	}
 	escolha = estados[game];
 
@@ -265,6 +237,29 @@ function trocaJogada(jogada) {
 		proximaJogada = "X";
 	}
 	return proximaJogada;
+}
+
+function criaArvore(jogadaInicial) {
+	var estadoAtual = {estado:"---------", filhos:[], pontos:0};
+	criaNodo(jogadaInicial, estadoAtual);
+	minimax(estadoAtual, (jogadaInicial == "X"));
+
+	return estadoAtual;
+}
+
+function criaNodo(jogada, estadoAtual) {
+	var estado = estadoAtual.estado;
+	if(avaliaVitoria(estado) == 0) {
+		var proximaJogada = trocaJogada(jogada);
+		for(var i = 0; i < estado.length; i++) {
+			var novoEstado = estado;
+			if(estado.charAt(i) == '-') {
+				var novoEstado = {estado: setCharAt(estado, i, jogada), filhos:[], pontos:0};
+				estadoAtual.filhos[estadoAtual.filhos.length] = novoEstado;
+				criaNodo(proximaJogada, novoEstado);
+			}
+		}
+	}
 }
 
 function minimax(estadoAtual, jogo) {
